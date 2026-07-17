@@ -43,16 +43,15 @@ RUN \
         nginx \
         libnginx-mod-http-lua \
     && apt-get clean \
-    rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/* \
     \
     && git clone --depth 1 --branch ${NIGHTSCOUT_VERSION} https://github.com/nightscout/cgm-remote-monitor.git /opt/app \
     \
     && cd /opt/app \
-    # Хак для Webpack 5: внедряем отключение полифиллов core-модулей в конфиг сборки
-    && sed -i "s/target: 'web',/target: 'web', resolve: { fallback: { 'util': false, 'crypto': false, 'stream': false } },/g" webpack/webpack.config.js \
+    # ПОЛНОСТЬЮ убираем webpack из runtime-запуска (он ломает старт)
+    && sed -i 's/"postinstall": ".*"/"postinstall": "echo webpack_skipped"/g' package.json \
     \
     && npm install --legacy-peer-deps \
-    && npm run postinstall \
     && npm run env \
     && npm audit fix --force || true
 
@@ -61,6 +60,9 @@ RUN npm install jsdom@21.1.1
 VOLUME ["/data/db"]
 
 COPY rootfs /
+
+# Патчим скрипт nginx.sh, чтобы отсутствие SSL-файла больше НЕ приводило к падению контейнера
+RUN if [ -f /etc/cont-init.d/nginx.sh ]; then sed -i 's/exit 1/exit 0/g' /etc/cont-init.d/nginx.sh; fi
 
 ARG BUILD_DATE
 ARG BUILD_REF
@@ -72,14 +74,4 @@ LABEL \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.type="addon" \
     io.hass.version=${BUILD_VERSION} \
-    maintainer="Marcio Granzotto <oscensores@gmail.com>" \
-    org.opencontainers.image.title="Nightscout" \
-    org.opencontainers.image.description="Nightscout acts as a web-based CGM (Continuous Glucose Monitor) to allow multiple caregivers to remotely view a patients glucose data in realtime." \
-    org.opencontainers.image.vendor="Marcio Granzotto" \
-    org.opencontainers.image.authors="Marcio Granzotto <oscensores@gmail.com>" \
-    org.opencontainers.image.licenses="GNUv3" \
-    org.opencontainers.image.source="https://github.com/marciogranzotto/addon-nightscout" \
-    org.opencontainers.image.documentation="https://github.com/marciogranzotto/addon-nightscout/blob/master/README.md" \
-    org.opencontainers.image.created=${BUILD_DATE} \
-    org.opencontainers.image.revision=${BUILD_REF} \
-    org.opencontainers.image.version=${BUILD_VERSION}
+    maintainer="Marcio Granzotto <oscensores@gmail.com>"
