@@ -14,7 +14,7 @@
     "5423/tcp": "5423"
   },
   "ports_description": {
-    "5423/tcp": "Nightscout frontend",
+    "5423/tcp": "Nightscout frontend"
   },
   "map": ["ssl", "config:rw"],
   "options": {
