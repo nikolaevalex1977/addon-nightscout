@@ -11,6 +11,10 @@ WORKDIR /opt/app
 
 ARG BUILD_ARCH=amd64
 ARG NIGHTSCOUT_VERSION=15.0.7
+
+# Ограничиваем использование памяти для Node.js, чтобы избежать ошибки 137 (Killed)
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+
 # hadolint ignore=DL3008
 RUN \
     URL="http://archive.ubuntu.com/ubuntu/" \
