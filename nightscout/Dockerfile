@@ -1,6 +1,6 @@
 ARG BUILD_FROM
 # hadolint ignore=DL3006
-FROM $BUILD_FROM
+FROM ghcr.io/home-assistant/amd64-base-ubuntu:22.04
 
 # Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -13,18 +13,24 @@ ARG BUILD_ARCH=amd64
 ARG NIGHTSCOUT_VERSION=15.0.7
 # hadolint ignore=DL3008
 RUN \
-    URL="http://archive.ubuntu.com/ubuntu/" \
-    && if [ "${BUILD_ARCH}" = "aarch64" ]; then \
-        URL="http://ports.ubuntu.com/ubuntu-ports/"; \
-    fi \
-    && echo "deb ${URL} bionic universe" \
-        > /etc/apt/sources.list.d/bionic-universe.list \
-    \
-    && echo "deb ${URL} bionic main" \
-        > /etc/apt/sources.list.d/bionic-main.list \
-    \
-    && curl -sL "https://deb.nodesource.com/setup_16.x" | bash - \
-    && apt-get update \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+        mongodb-server \
+        nodejs \
+        git \
+        webpack \
+        build-essential \
+        python2.7 \
+        nginx \
+        libnginx-mod-http-lua \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone --depth 1 https://github.com /opt/app \
+    && cd /opt/app \
+    && npm install \
+    && npm run postinstall \
+    && npm run env \
+    && npm audit fix
     && apt-get install -y --no-install-recommends \
         mongodb-server \
         nodejs \
