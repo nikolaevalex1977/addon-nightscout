@@ -1,22 +1,19 @@
-ARG BUILD_FROM
-# hadolint ignore=DL3006
 FROM ghcr.io/home-assistant/amd64-base-ubuntu:22.04
 
 # Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN mkdir -p /opt/app
-COPY . /opt
+COPY /opt /
 WORKDIR /opt/app
 
 ARG BUILD_ARCH=amd64
 ARG NIGHTSCOUT_VERSION=15.0.7
-# hadolint ignore=DL3008
-RUN \
-    apt-get update \
-    && apt-get install -y --no-install-recommends \
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
         mongodb-server \
         nodejs \
+        npm \
         git \
         webpack \
         build-essential \
@@ -24,37 +21,16 @@ RUN \
         nginx \
         libnginx-mod-http-lua \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && git clone --depth 1 https://github.com /opt/app \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com /opt/app \
     && cd /opt/app \
     && npm install \
     && npm run postinstall \
     && npm run env \
     && npm audit fix
-    && apt-get install -y --no-install-recommends \
-        mongodb-server \
-        nodejs \
-        git \
-        webpack \
-        build-essential \
-        python2.7 \
-        nginx \
-        libnginx-mod-http-lua \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    \
-    && git clone --depth 1 --branch ${NIGHTSCOUT_VERSION} https://github.com/nightscout/cgm-remote-monitor.git /opt/app \
-    \
-    && npm install \
-    && npm run postinstall \
-    && npm run env \
-    && npm audit fix
 
-RUN npm install jsdom@21.1.1
-
-VOLUME ["/data/db"]
-
-# Copy root filesystem
+# Copy rootfs
 COPY rootfs /
 
 # Build arguments
@@ -65,18 +41,7 @@ ARG BUILD_VERSION
 # Labels
 LABEL \
     io.hass.name="Nightscout" \
-    io.hass.description="Nightscout acts as a web-based CGM (Continuous Glucose Montinor) to allow multiple caregivers to remotely view a patients glucose data in realtime." \
+    io.hass.description="Nightscout acting as a web-based CGM" \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.type="addon" \
-    io.hass.version=${BUILD_VERSION} \
-    maintainer="Marcio Granzotto <oscensores@gmail.com>" \
-    org.opencontainers.image.title="Nightscout" \
-    org.opencontainers.image.description="Nightscout acts as a web-based CGM (Continuous Glucose Montinor) to allow multiple caregivers to remotely view a patients glucose data in realtime." \
-    org.opencontainers.image.vendor="Marcio Granzotto" \
-    org.opencontainers.image.authors="Marcio Granzotto <oscensores@gmail.com>" \
-    org.opencontainers.image.licenses="GNUv3" \
-    org.opencontainers.image.source="https://github.com/marciogranzotto/addon-nightscout" \
-    org.opencontainers.image.documentation="https://github.com/marciogranzotto/addon-nightscout/blob/master/README.md" \
-    org.opencontainers.image.created=${BUILD_DATE} \
-    org.opencontainers.image.revision=${BUILD_REF} \
-    org.opencontainers.image.version=${BUILD_VERSION}
+    io.hass.version=${BUILD_VERSION}
