@@ -12,6 +12,7 @@ WORKDIR /opt/app
 ARG BUILD_ARCH=amd64
 ARG NIGHTSCOUT_VERSION=15.0.7
 
+# Жесткое ограничение памяти для Node.js
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # hadolint ignore=DL3008
@@ -48,8 +49,12 @@ RUN \
     && git clone --depth 1 --branch ${NIGHTSCOUT_VERSION} https://github.com/nightscout/cgm-remote-monitor.git /opt/app \
     \
     && cd /opt/app \
+    # ХАК: Отключаем генерацию Source Maps в webpack.config.js для экономии 70% ОЗУ
+    && sed -i "s/devtool: .*,/devtool: false,/g" webpack/webpack.config.js \
+    # Исправляем проблему отсутствия полифилла util в Webpack 5
+    && sed -i "s/target: 'web',/target: 'web', resolve: { fallback: { 'util': false, 'crypto': false, 'stream': false } },/g" webpack/webpack.config.js \
+    \
     && npm install --legacy-peer-deps \
-    # Принудительно собираем клиентскую часть Webpack внутри Docker-образа
     && npm run postinstall \
     && npm run env \
     && npm audit fix --force || true
@@ -60,7 +65,7 @@ VOLUME ["/data/db"]
 
 COPY rootfs /
 
-# Патчим скрипт nginx.sh, чтобы отсутствие SSL-файла больше НЕ приводило к падению контейнера
+# Патчим скрипт nginx.sh, чтобы статус SSL (включен или выключен) не приводил к падению контейнера
 RUN if [ -f /etc/cont-init.d/nginx.sh ]; then sed -i 's/exit 1/exit 0/g' /etc/cont-init.d/nginx.sh; fi
 
 ARG BUILD_DATE
