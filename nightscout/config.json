@@ -1,9 +1,9 @@
 {
-  "name": "Nightscout",
+  "name": "Nightscout Custom 15",
   "version": "15.0.7",
   "slug": "nightscout",
   "description": "Nightscout acts as a web-based CGM (Continuous Glucose Monitor) to allow multiple caregivers",
-  "url": "https://github.com/marciogranzotto/addon-nightscout",
+  "url": "https://github.com",
   "arch": ["aarch64", "amd64"],
   "webui": "[PROTO:ssl]://[HOST]:[PORT=5423]",
   "startup": "services",
